@@ -10,11 +10,16 @@ from src.utils import *
 from src.models import *
 from src.dataset import Dataset
 
+import random
+import numpy as np
+import torch as th
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
     # general options
-    parser.add_argument('--dataset', type=str, default='nyt', choices=['yelp', 'dblp', 'nyt'])
+    # parser.add_argument('--dataset', type=str, default='nyt', choices=['yelp', 'dblp', 'nyt'])
+    parser.add_argument('--dataset', type=str, default='nyt')
     parser.add_argument("--embed_path", type=str, default='')
     parser.add_argument('--model', type=str, default='LSTMClassifer', choices=['NetGen', 'NetGenWord', 'NetGenLink', 'LSTMClassifer'])
     parser.add_argument('--gpu', type=int, default=0)
@@ -24,6 +29,8 @@ def parse_args():
     parser.add_argument('--log_every', type=int, default=1, help='log results every epoch.')
     parser.add_argument('--save_every', type=int, default=10, help='save learned embedding every epoch.')
     parser.add_argument('--tag', type=str, default='')
+    parser.add_argument('--few_shot_ratio', type=float, default=1.0)
+    parser.add_argument('--include_all', type=bool, default=False)
 
     # training options
     parser.add_argument('--split_ratio', type=str, default="0.8")
@@ -53,6 +60,9 @@ def parse_args():
     parser.add_argument('--alpha', type=float, default=0.1, help='p1')
     parser.add_argument('--beta', type=float, default=0.1, help='closs')
 
+    # random seed
+    parser.add_argument('--seed', type=int, default=0)
+
     return parser.parse_args()
 
 
@@ -81,6 +91,10 @@ def plot_graph(adj, words, path):
 
 
 def main(args):
+    if args.seed != 0:
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        th.manual_seed(args.seed)
     start_time = time.time()
     device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
 
@@ -90,7 +104,8 @@ def main(args):
 
     split_ratio = float(args.split_ratio)
 
-    dataset = Dataset(emb_dim=args.embed_dim, data_file=data_file, split_ratio=split_ratio)
+    dataset = Dataset(emb_dim=args.embed_dim, data_file=data_file, split_ratio=split_ratio,
+                      include_all=args.include_all, few_shot_ratio=args.few_shot_ratio)
     args.n_labels = dataset.n_labels
 
     logger = init_logger(args)
@@ -108,10 +123,10 @@ def main(args):
         exit('KeyboardInterrupt!')
 
     logger.info("total cost time: {} ".format(timedelta(seconds=(time.time() - start_time))))
-    save_model(model, logger, args.log_dir)
+    if args.few_shot_ratio == 1.0:
+        save_model(model, logger, args.log_dir)
 
 
 if __name__ == '__main__':
     args = parse_args()
     main(args)
-

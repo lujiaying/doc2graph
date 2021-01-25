@@ -1,7 +1,5 @@
-import os
 from collections import defaultdict
 from string import punctuation as punctuation_
-import nltk
 import random
 from nltk.corpus import stopwords
 import torch
@@ -13,7 +11,7 @@ ignore_ = list(stopwords_) + list(punctuation_)
 
 
 class Dataset:
-    def __init__(self, emb_dim, data_file, split_ratio=0.8, include_all=False):
+    def __init__(self, emb_dim, data_file, split_ratio=0.8, include_all=False, few_shot_ratio=1.0):
         self.TEXT = data.Field(init_token='<start>', eos_token='<eos>', lower=True, tokenize='spacy')
         self.LABEL = data.Field(sequential=False, unk_token=None)
         self.MASK = data.Field(init_token='<start>', eos_token='<eos>', lower=True, tokenize='spacy')
@@ -21,7 +19,8 @@ class Dataset:
         f = lambda ex: len(ex.text) >= 10 and len(ex.text) <= 500
 
         self.train, self.val, self.test, self.all = Dataset_.splits(self.TEXT, self.LABEL, self.MASK, root=data_file,
-                                                                    filter_pred=f, split_ratio=split_ratio, include_all=include_all)
+                                                                    filter_pred=f, split_ratio=split_ratio, include_all=include_all,
+                                                                    few_shot_ratio=few_shot_ratio)
 
         if include_all:
             self.TEXT.build_vocab(self.all, vectors=GloVe('6B', dim=emb_dim))
@@ -114,7 +113,8 @@ class Dataset_(data.Dataset):
         super(Dataset_, self).__init__(examples, fields, **kwargs)
 
     @classmethod
-    def splits(cls, text_field, label_field, mask_field, root, split_ratio=0.8, include_all=False, **kwargs):
+    def splits(cls, text_field, label_field, mask_field, root, split_ratio=0.8, include_all=False,
+               few_shot_ratio=1.0, **kwargs):
         raw_data = []
 
         with open(root, 'r') as f:
@@ -125,8 +125,8 @@ class Dataset_(data.Dataset):
         random.shuffle(raw_data)
 
         train_sample_num = round(len(raw_data)*split_ratio)
-        val_sample_num = round(len(raw_data)*0.1)
-        train_raw_data = raw_data[0:train_sample_num]
+        val_sample_num = round(len(raw_data)*0.1)   # TODO: might be wrong
+        train_raw_data = raw_data[0:round(train_sample_num*few_shot_ratio)]
         val_raw_data = raw_data[-2*val_sample_num:-val_sample_num]
         test_raw_data = raw_data[-val_sample_num:]
         train_data = cls(path=root,  text_field=text_field, label_field=label_field, mask_field=mask_field, data_list=train_raw_data, **kwargs)
@@ -151,4 +151,3 @@ class Dataset_(data.Dataset):
 
         return data.BucketIterator.splits(
             (train, val, test), batch_size=batch_size, device=device)
-

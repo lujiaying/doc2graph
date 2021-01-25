@@ -659,8 +659,9 @@ class NetGen(AbstractNetGen):
                 avr_cls = np.mean(list_loss_cls)
                 list_loss_recon, list_loss_penal1, list_loss_penal2, list_loss_closs = [], [], [], []
                 list_loss_cls = []
-                logger.info(f'Epoch-{epoch}; loss_recon: {avr_loss_recon:.4f}; loss_cls: {avr_cls:.4f}; penal1: {avr_loss_penal1:.4f}; '
-                            f'avr_closs: {avr_closs:.4f}; duration: {round(duration)}')
+                # TODO: decomment when not doing few_shots
+                # logger.info(f'Epoch-{epoch}; loss_recon: {avr_loss_recon:.4f}; loss_cls: {avr_cls:.4f}; penal1: {avr_loss_penal1:.4f}; '
+                #            f'avr_closs: {avr_closs:.4f}; duration: {round(duration)}')
 
                 train_acc, train_loss = self.test(train_iter)
                 val_acc, val_loss = self.test(val_iter)
@@ -680,9 +681,10 @@ class NetGen(AbstractNetGen):
                     if epoch > args.minimal_epoch:
                         patience += args.log_every
 
-                logger.info(f'loss ratio: {loss_ratio:.4f} Train Acc: {train_acc:.4f}; '
-                            f'Valid Acc: {val_acc:.4f}; Test Acc: {test_acc:.4f}; '
-                            f'Best Acc: {best_test_acc:.4f} Best loss ratio: {best_loss_ratio:.4f} @ {best_iter}')
+                # TODO: decomment when not doing few_shots
+                # logger.info(f'loss ratio: {loss_ratio:.4f} Train Acc: {train_acc:.4f}; '
+                #             f'Valid Acc: {val_acc:.4f}; Test Acc: {test_acc:.4f}; '
+                #             f'Best Acc: {best_test_acc:.4f} Best loss ratio: {best_loss_ratio:.4f} @ {best_iter}')
 
                 if args.early_stop and patience > args.patience:
                     break
