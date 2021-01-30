@@ -23,9 +23,15 @@ class Dataset:
                                                                     few_shot_ratio=few_shot_ratio)
 
         if include_all:
+            """
+            # TODO: add just for output graphs, if not, comment out the block
             self.TEXT.build_vocab(self.all, vectors=GloVe('6B', dim=emb_dim))
             self.LABEL.build_vocab(self.all)
             self.MASK.build_vocab(self.all)
+            """
+            self.TEXT.build_vocab(self.train)
+            self.LABEL.build_vocab(self.train)
+            self.MASK.build_vocab(self.train)
         else:
             self.TEXT.build_vocab(self.train)
             self.LABEL.build_vocab(self.train)
@@ -122,6 +128,8 @@ class Dataset_(data.Dataset):
                 label, text = line.strip().split('\t ')
                 label = int(label)
                 raw_data.append((label, text))
+        all_data = cls(path=root, text_field=text_field, label_field=label_field, mask_field=mask_field, data_list=raw_data, **kwargs)
+
         random.shuffle(raw_data)
 
         train_sample_num = round(len(raw_data)*split_ratio)
@@ -132,9 +140,7 @@ class Dataset_(data.Dataset):
         train_data = cls(path=root,  text_field=text_field, label_field=label_field, mask_field=mask_field, data_list=train_raw_data, **kwargs)
         val_data = cls(path=root,  text_field=text_field, label_field=label_field, mask_field=mask_field, data_list=val_raw_data, **kwargs)
         test_data = cls(path=root, text_field=text_field, label_field=label_field, mask_field=mask_field, data_list=test_raw_data, **kwargs)
-
         if include_all:
-            all_data = cls(path=root, text_field=text_field, label_field=label_field, mask_field=mask_field, data_list=raw_data, **kwargs)
             return (train_data, val_data, test_data, all_data)
         else:
             return (train_data, val_data, test_data, None)
